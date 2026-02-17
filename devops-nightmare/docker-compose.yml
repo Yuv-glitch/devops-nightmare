@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  gitea:
+    image: gitea/gitea:1.21
+    container_name: gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=sqlite3
+    ports:
+      - "3000:3000"
+    networks:
+      - devops-net
+
+  jenkins:
+    build: ./jenkins
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jenkins_data:/var/jenkins_home
+    networks:
+      - devops-net
+    depends_on:
+      - gitea
+
+  gitea-setup:
+    build: ./gitea-init
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - devops-net
+    depends_on:
+      - gitea
+
+networks:
+  devops-net:
+    driver: bridge
+
+volumes:
+  jenkins_data:
